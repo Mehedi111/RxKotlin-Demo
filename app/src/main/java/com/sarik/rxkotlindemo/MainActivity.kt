@@ -55,6 +55,26 @@ class MainActivity : AppCompatActivity() {
                 }
 
             })
+
+
+        createMethod()
+        bufferMethod()
+
+    }
+
+    private fun bufferMethod() {
+        val taskObservable = Observable
+            .fromIterable(getList())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io())
+
+        taskObservable.buffer(2)
+            .subscribe {
+                Log.d(TAG, "bufferMethod: called -------------------------")
+                for (item in it) {
+                    Log.d(TAG, "bufferMethod: $item")
+                }
+            }
     }
 
     /*
@@ -99,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         recyclerView?.adapter = adapter
     }
 
-    private fun test() {
+    private fun getList(): List<String> {
         val list = ArrayList<String>()
         list.add("1")
         list.add("2")
@@ -108,6 +128,94 @@ class MainActivity : AppCompatActivity() {
         list.add("5")
         list.add("50")
         list.add("5")
+        list.add("100")
+        list.add("950")
+        list.add("34")
+        return list
+    }
+
+    /*
+    * SIMPLE FUNCTION USING CREATE OPERATOR
+    * */
+    private fun createMethod() {
+        val list = getList()
+        Observable.create<String> {
+            for (item in list) {
+                if (!it.isDisposed && item.length <= 2) {
+                    it.onNext(item)
+                }
+            }
+            if (!it.isDisposed) {
+                it.onComplete()
+            }
+        }.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : Observer<String> {
+                override fun onSubscribe(d: Disposable) {
+                    disposable.add(d)
+                }
+
+                override fun onNext(t: String) {
+                    Log.d(TAG, "onNext: ${t}")
+                }
+
+                override fun onError(e: Throwable) {
+
+                }
+
+                override fun onComplete() {
+                }
+
+            })
+
+        /*
+        *   Observable.just(someList) will give you 1 emission - a List.
+        *   Observable.from(someList) will give you N emissions - each item in the list.
+        * */
+
+        //USE OF JUST
+        Observable.just(list)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(object : Observer<List<String>> {
+                override fun onSubscribe(d: Disposable) {
+
+                }
+
+                override fun onNext(t: List<String>) {
+
+                }
+
+                override fun onError(e: Throwable) {
+
+                }
+
+                override fun onComplete() {
+
+                }
+
+            })
+
+        //USE OF FROM ARRAY
+        Observable.fromArray(list)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe {
+
+            }
+
+        /// RANGE
+        Observable.range(0, 100)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .repeat(3) // use repeat for repeating same task 3 times
+            .subscribe {
+                Log.d(TAG, "createMethod: range $it")
+            }
+    }
+
+    private fun filterMethod() {
+        val list = getList()
 
         val taskObservable = Observable
             .fromIterable(list) // pass the iterator
